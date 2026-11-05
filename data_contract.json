@@ -1,0 +1,53 @@
+
+{
+  "contract_name": "Iris_Data_Contract",
+  "version": "1.0",
+  "description": "Contrato de datos para la clasificación de especies Iris mediante Random Forest.",
+  "dataset": "Iris",
+  "input_features": {
+    "sepal_length": {
+      "type": "number",
+      "required": true,
+      "nullable": false,
+      "unit": "cm",
+      "min": 0.1,
+      "max": 10.0
+    },
+    "sepal_width": {
+      "type": "number",
+      "required": true,
+      "nullable": false,
+      "unit": "cm",
+      "min": 0.1,
+      "max": 10.0
+    },
+    "petal_length": {
+      "type": "number",
+      "required": true,
+      "nullable": false,
+      "unit": "cm",
+      "min": 0.1,
+      "max": 10.0
+    },
+    "petal_width": {
+      "type": "number",
+      "required": true,
+      "nullable": false,
+      "unit": "cm",
+      "min": 0.1,
+      "max": 10.0
+    }
+  },
+  "valid_example": {
+    "sepal_length": 5.1,
+    "sepal_width": 3.5,
+    "petal_length": 1.4,
+    "petal_width": 0.2
+  },
+  "invalid_example": {
+    "sepal_length": null,
+    "sepal_width": "abc",
+    "petal_length": -2.0,
+    "petal_width": 0.2
+  }
+}

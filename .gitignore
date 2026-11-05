@@ -1,0 +1,29 @@
+# ============================================================
+# SEMINARIO DE GRADO II
+# ARCHIVOS EXCLUIDOS DEL REPOSITORIO GIT
+# ============================================================
+
+# 1. Entorno virtual de Python
+venv/
+.venv/
+
+# 2. Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# 3. Experimentos y base de datos local de MLflow
+mlruns/
+mlflow.db
+
+# 4. Archivos temporales y de configuración local
+.env
+.vscode/
+.pytest_cache/
+
+# 5. Copias de seguridad del entrenamiento
+train_original.py
+train - original.py
+
+# 6. Archivos temporales del sistema operativo
+Thumbs.db
+.DS_Store
