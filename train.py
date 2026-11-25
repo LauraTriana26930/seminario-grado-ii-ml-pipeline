@@ -1,144 +1,258 @@
-
-# ==========================================================================================
-# SEMINARIO DE GRADO II
-# ESPECIALIZACIÓN EN CIENCIA DE DATOS
-# ==========================================================================================
-# Proyecto: Estandarización de Pipelines y Control de Calidad de Datos
-#
-# Objetivo:
-# Entrenar y evaluar un modelo Random Forest utilizando datos previamente
-# validados, registrando hiperparámetros, métricas y modelo mediante MLflow.
-#
-# El archivo permite:
-# 1. Recibir datos validados desde run_pipeline.py.
-# 2. Ejecutarse de manera independiente para reproducir el entrenamiento.
-# ==========================================================================================
-
-
-# ==========================================================================================
+# ============================================================
 # 1. IMPORTACIÓN DE LIBRERÍAS
-# ==========================================================================================
+# ============================================================
 
 import mlflow
 import mlflow.sklearn
 
-from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-
-# ==========================================================================================
-# 2. CONFIGURACIÓN DE MLFLOW
-# ==========================================================================================
-
-# Configurar SQLite como almacenamiento local de experimentos.
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
-
-# Nombre del experimento donde se registrarán los resultados.
-mlflow.set_experiment("Proyecto_Final_Grado")
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
 
 
-# ==========================================================================================
+# ============================================================
+# 2. CONFIGURACIÓN DEL MODELO
+# ============================================================
+
+N_ESTIMATORS = 350
+MAX_DEPTH = 10
+RANDOM_STATE = 42
+TEST_SIZE = 0.20
+
+
+# ============================================================
 # 3. FUNCIÓN DE ENTRENAMIENTO
-# ==========================================================================================
+# ============================================================
 
 def entrenar_modelo(X, y):
     """
-    Entrena y evalúa un modelo Random Forest utilizando
-    las características (X) y etiquetas (y) recibidas.
+    Entrena y evalúa Random Forest utilizando los datos
+    que superaron el control de calidad.
 
-    Esta función permite que run_pipeline.py entregue
-    directamente los datos que superaron la validación.
+    El registro en MLflow utiliza la ejecución activa
+    gestionada por el automatizador de tareas.
     """
 
-    # ======================================================================================
-    # 3.1. INICIO DEL EXPERIMENTO
-    # ======================================================================================
+    # Verificar que exista una ejecución activa en MLflow.
 
-    with mlflow.start_run(run_name="Run_4"):
+    if mlflow.active_run() is None:
 
-        # ==================================================================================
-        # 3.2. DEFINICIÓN DE HIPERPARÁMETROS
-        # ==================================================================================
-
-        n_estimators = 350  # Número de árboles del Random Forest.
-        max_depth = 10     # Profundidad máxima de cada árbol.
-
-        # ==================================================================================
-        # 3.3. REGISTRO DE HIPERPARÁMETROS EN MLFLOW
-        # ==================================================================================
-
-        mlflow.log_param("n_estimators", n_estimators)
-        mlflow.log_param("max_depth", max_depth)
-
-        # ==================================================================================
-        # 3.4. DIVISIÓN DE DATOS EN ENTRENAMIENTO Y PRUEBA
-        # ==================================================================================
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=0.2,
-            random_state=42
+        raise RuntimeError(
+            "No existe una ejecución activa en MLflow."
         )
 
-        # ==================================================================================
-        # 3.5. CONSTRUCCIÓN DEL MODELO RANDOM FOREST
-        # ==================================================================================
+    print("\n" + "=" * 60)
+    print("ENTRENAMIENTO DEL MODELO RANDOM FOREST")
+    print("=" * 60)
 
-        model = RandomForestClassifier(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            random_state=42
+
+    # ========================================================
+    # 3.1. DIVISIÓN DE LOS DATOS
+    # ========================================================
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
+        stratify=y
+    )
+
+    print(f"Muestras de entrenamiento: {len(X_train)}")
+    print(f"Muestras de prueba: {len(X_test)}")
+
+
+    # ========================================================
+    # 3.2. REGISTRO DE HIPERPARÁMETROS
+    # ========================================================
+
+    mlflow.log_params({
+        "algorithm": "RandomForestClassifier",
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH,
+        "random_state": RANDOM_STATE,
+        "test_size": TEST_SIZE,
+        "stratified_split": True,
+        "train_samples": len(X_train),
+        "test_samples": len(X_test)
+    })
+
+
+    # ========================================================
+    # 3.3. CONSTRUCCIÓN DEL MODELO
+    # ========================================================
+
+    modelo = RandomForestClassifier(
+        n_estimators=N_ESTIMATORS,
+        max_depth=MAX_DEPTH,
+        random_state=RANDOM_STATE
+    )
+
+
+    # ========================================================
+    # 3.4. ENTRENAMIENTO
+    # ========================================================
+
+    modelo.fit(X_train, y_train)
+
+    print("Entrenamiento finalizado correctamente.")
+
+
+    # ========================================================
+    # 3.5. EVALUACIÓN DEL MODELO
+    # ========================================================
+
+    predicciones = modelo.predict(X_test)
+
+    metricas = {
+
+        "accuracy": accuracy_score(
+            y_test,
+            predicciones
+        ),
+
+        "precision_macro": precision_score(
+            y_test,
+            predicciones,
+            average="macro",
+            zero_division=0
+        ),
+
+        "recall_macro": recall_score(
+            y_test,
+            predicciones,
+            average="macro",
+            zero_division=0
+        ),
+
+        "f1_macro": f1_score(
+            y_test,
+            predicciones,
+            average="macro",
+            zero_division=0
         )
-
-        # ==================================================================================
-        # 3.6. ENTRENAMIENTO DEL MODELO
-        # ==================================================================================
-
-        model.fit(X_train, y_train)
-
-        # ==================================================================================
-        # 3.7. EVALUACIÓN DEL MODELO
-        # ==================================================================================
-
-        accuracy = model.score(X_test, y_test)
-
-        # ==================================================================================
-        # 3.8. REGISTRO DE MÉTRICAS Y MODELO EN MLFLOW
-        # ==================================================================================
-
-        mlflow.log_metric("accuracy", accuracy)
-
-        # Guardar el modelo mediante MLflow, conservando
-        # la configuración utilizada en el código original.
-        mlflow.sklearn.log_model(
-            model,
-            name="iris_model",
-            skops_trusted_types=["sklearn.tree._tree.Tree"]
-        )
-
-        # ==================================================================================
-        # 3.9. PRESENTACIÓN DE RESULTADOS
-        # ==================================================================================
-
-        print(f"Modelo registrado con accuracy: {accuracy}")
-        print(f"Run ID: {mlflow.active_run().info.run_id}")
-
-        return model, accuracy
+    }
 
 
-# ==========================================================================================
-# 4. EJECUCIÓN INDEPENDIENTE DEL ARCHIVO
-# ==========================================================================================
+    # ========================================================
+    # 3.6. REGISTRO DE MÉTRICAS EN MLFLOW
+    # ========================================================
+
+    mlflow.log_metrics(metricas)
+
+
+    # ========================================================
+    # 3.7. REGISTRO DEL MODELO
+    # ========================================================
+
+    mlflow.sklearn.log_model(
+        modelo,
+        name="iris_model",
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
+    )
+
+
+    # ========================================================
+    # 3.8. PRESENTACIÓN DE RESULTADOS
+    # ========================================================
+
+    print("\nRESULTADOS DE EVALUACIÓN")
+    print("-" * 60)
+
+    for nombre, valor in metricas.items():
+
+        print(f"{nombre}: {valor:.4f}")
+
+    print("\nModelo registrado correctamente en MLflow.")
+
+    print(
+        f"Run ID: {mlflow.active_run().info.run_id}"
+    )
+
+    return modelo, metricas
+
+
+# ============================================================
+# 4. EJECUCIÓN INDEPENDIENTE DEL MÓDULO
+# ============================================================
 
 if __name__ == "__main__":
 
-    # Esta carga de Iris se utiliza únicamente cuando
-    # train.py se ejecuta directamente desde la terminal.
-    data = load_iris()
+    from pathlib import Path
 
-    X = data.data
-    y = data.target
+    from prepare import preparar_datos, NOMBRES_CAMPOS
 
-    entrenar_modelo(X, y)
+    from validate_data import (
+        cargar_contrato,
+        validar_dataset,
+        mostrar_reporte
+    )
+
+    # Preparar y validar los datos antes del entrenamiento.
+
+    registros, etiquetas = preparar_datos("valido")
+
+    contrato = cargar_contrato()
+
+    reporte = validar_dataset(
+        registros,
+        etiquetas,
+        contrato
+    )
+
+    mostrar_reporte(reporte)
+
+    if not reporte["aprobado"]:
+
+        print("\nENTRENAMIENTO BLOQUEADO")
+
+        raise SystemExit(1)
+
+    # Construir las características previamente validadas.
+
+    X = [
+        [registro[campo] for campo in NOMBRES_CAMPOS]
+        for registro in registros
+    ]
+
+    y = etiquetas
+
+    # Configurar el almacenamiento local de MLflow.
+
+    ruta_db = (
+        Path(__file__).resolve().parent / "mlflow.db"
+    )
+
+    mlflow.set_tracking_uri(
+        f"sqlite:///{ruta_db.as_posix()}"
+    )
+
+    mlflow.set_experiment(
+        "Actividad_2_1_Control_Calidad"
+    )
+
+    # Ejecución independiente para verificar el módulo.
+
+    with mlflow.start_run(
+        run_name="Prueba_Modulo_Entrenamiento"
+    ):
+
+        mlflow.set_tag("activity", "2.1")
+
+        mlflow.set_tag(
+            "execution_type",
+            "module_test"
+        )
+
+        mlflow.set_tag(
+            "contract_version",
+            contrato["version"]
+        )
+
+        modelo, metricas = entrenar_modelo(X, y)

@@ -1,14 +1,24 @@
-
 {
   "contract_name": "Iris_Data_Contract",
-  "version": "1.0",
-  "description": "Contrato de datos para la clasificación de especies Iris mediante Random Forest.",
+  "version": "2.0",
+  "activity": "Actividad 2.1",
+  "description": "Contrato de datos para la estandarización del pipeline y el control de calidad del dataset Iris.",
   "dataset": "Iris",
+
+  "dataset_rules": {
+    "allow_empty": false,
+    "expected_features": 4,
+    "allow_extra_fields": false,
+    "require_target_alignment": true
+  },
+
   "input_features": {
     "sepal_length": {
       "type": "number",
       "required": true,
       "nullable": false,
+      "allow_boolean": false,
+      "finite": true,
       "unit": "cm",
       "min": 0.1,
       "max": 10.0
@@ -17,6 +27,8 @@
       "type": "number",
       "required": true,
       "nullable": false,
+      "allow_boolean": false,
+      "finite": true,
       "unit": "cm",
       "min": 0.1,
       "max": 10.0
@@ -25,6 +37,8 @@
       "type": "number",
       "required": true,
       "nullable": false,
+      "allow_boolean": false,
+      "finite": true,
       "unit": "cm",
       "min": 0.1,
       "max": 10.0
@@ -33,17 +47,33 @@
       "type": "number",
       "required": true,
       "nullable": false,
+      "allow_boolean": false,
+      "finite": true,
       "unit": "cm",
       "min": 0.1,
       "max": 10.0
     }
   },
+
+  "target": {
+    "name": "species",
+    "type": "integer",
+    "nullable": false,
+    "allowed_values": [0, 1, 2],
+    "class_mapping": {
+      "0": "Iris-setosa",
+      "1": "Iris-versicolor",
+      "2": "Iris-virginica"
+    }
+  },
+
   "valid_example": {
     "sepal_length": 5.1,
     "sepal_width": 3.5,
     "petal_length": 1.4,
     "petal_width": 0.2
   },
+
   "invalid_example": {
     "sepal_length": null,
     "sepal_width": "abc",
